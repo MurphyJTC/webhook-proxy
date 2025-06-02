@@ -13,7 +13,7 @@ class Server(object):
     app = None
     http_port = None
 
-    def __init__(self, endpoint_configurations, host='127.0.0.1', port=5000, imports=None):
+    def __init__(self, endpoint_configurations, host='0.0.0.0', port=5000, imports=None):
         self.host = host
         self.port = int(port)
 
@@ -29,26 +29,28 @@ class Server(object):
         Server.app = Flask(__name__)
         action_metrics = self._setup_metrics()
 
-        # ✅ 加入接收 LINE Webhook 的 POST / 處理
+        # ✅ 處理 LINE Webhook POST /
         @Server.app.route("/", methods=["POST"])
         def line_webhook():
             try:
                 data = request.get_json()
                 print("✅ Received LINE Webhook:", data)
 
-                # ✅ 替換成你實際的 Google Apps Script webhook URL
-                GAS_URL = "https://script.google.com/macros/s/AKfycbyk1pAzwGrkpRMtcTcmBaFftK5Egwfzj0lXILlr0lMCV-OXqAM_FO_SkEx-_9WTT9RA/exec?key=3b4b9657-4242-4a58-b24f-f2050a9fa7ea"
+                # ✅ 你的 Google Apps Script URL，請修改為你自己的
+                GAS_URL = "https://script.google.com/macros/s/你的GAS-ID/exec?key=你的密鑰"
                 headers = {"Content-Type": "application/json"}
 
-                r = requests.post(GAS_URL, data=json.dumps(data), headers=headers)
-                print("✅ Forwarded to GAS:", r.status_code, r.text)
+                # ✅ 加入 timeout 限制，避免 LINE timeout
+                res = requests.post(GAS_URL, data=json.dumps(data), headers=headers, timeout=5)
 
+                print(f"📤 Forwarded to GAS ({res.status_code}): {res.text}")
                 return "OK", 200
+
             except Exception as e:
                 print("❌ Error in webhook handler:", e)
                 return jsonify({"error": str(e)}), 500
 
-        # 原本 endpoints 設定
+        # 原本的 webhook-proxy endpoints 設定
         endpoints = [Endpoint(route, settings, action_metrics)
                      for config in endpoint_configurations
                      for route, settings in config.items()]
@@ -62,11 +64,8 @@ class Server(object):
         metrics.info('flask_app_info', 'Application info',
                      version=os.environ.get('GIT_COMMIT') or 'unknown')
 
-        metrics.info(
-            'flask_app_built_at', 'Application build timestamp'
-        ).set(
-            float(os.environ.get('BUILD_TIMESTAMP') or '0')
-        )
+        metrics.info('flask_app_built_at', 'Application build timestamp').set(
+            float(os.environ.get('BUILD_TIMESTAMP') or '0'))
 
         action_summary = Summary(
             'webhook_proxy_actions',
