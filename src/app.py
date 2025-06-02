@@ -1,29 +1,16 @@
-import sys
 import signal
-
-import yaml
-
 from server import Server
 
+# ✅ 建立 Server（不需要讀設定檔）
+server = Server(
+    endpoint_configurations=[],  # 不啟用 YAML 的 endpoint 功能
+    host='0.0.0.0',
+    port=5000
+)
 
-def parse_settings(source='server.yml'):
-    with open(source, 'r') as source_file:
-        return yaml.load(source_file)
+# ✅ 處理 SIGTERM，讓 Vercel 關閉不會報錯
+signal.signal(signal.SIGTERM, lambda *args: exit(0))
+signal.signal(signal.SIGINT, lambda *args: exit(0))
 
-
-def handle_signal(num, _):
-    if num == signal.SIGTERM:
-        exit(0)
-
-    else:
-        exit(1)
-
-
-if __name__ == '__main__':
-    settings = parse_settings(sys.argv[1]) if len(sys.argv) == 2 else parse_settings()
-    
-    signal.signal(signal.SIGTERM, handle_signal)
-    signal.signal(signal.SIGINT, handle_signal)
-
-    server = Server(endpoint_configurations=settings.get('endpoints'), **settings.get('server', dict()))
-    server.run()
+# ✅ 啟動 Flask 應用（LINE webhook 會在 server.py 的 @app.route("/") 中處理）
+server.run()
