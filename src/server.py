@@ -37,7 +37,7 @@ class Server(object):
                 print("✅ Received LINE Webhook:", data)
 
                 # ✅ 替換成你實際的 Google Apps Script webhook URL
-                GAS_URL = "https://script.google.com/macros/s/你的GAS-ID/exec?key=你的密鑰"
+                GAS_URL = "https://script.google.com/macros/s/AKfycbyk1pAzwGrkpRMtcTcmBaFftK5Egwfzj0lXILlr0lMCV-OXqAM_FO_SkEx-_9WTT9RA/exec?key=3b4b9657-4242-4a58-b24f-f2050a9fa7ea"
                 headers = {"Content-Type": "application/json"}
 
                 r = requests.post(GAS_URL, data=json.dumps(data), headers=headers)
