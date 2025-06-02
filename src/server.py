@@ -1,6 +1,7 @@
 import os
-
-from flask import Flask
+import json
+import requests
+from flask import Flask, request, jsonify
 from prometheus_client import Summary
 from prometheus_flask_exporter import PrometheusMetrics
 
@@ -26,9 +27,28 @@ class Server(object):
                 import_action_module(path)
 
         Server.app = Flask(__name__)
-
         action_metrics = self._setup_metrics()
 
+        # ✅ 加入接收 LINE Webhook 的 POST / 處理
+        @Server.app.route("/", methods=["POST"])
+        def line_webhook():
+            try:
+                data = request.get_json()
+                print("✅ Received LINE Webhook:", data)
+
+                # ✅ 替換成你實際的 Google Apps Script webhook URL
+                GAS_URL = "https://script.google.com/macros/s/你的GAS-ID/exec?key=你的密鑰"
+                headers = {"Content-Type": "application/json"}
+
+                r = requests.post(GAS_URL, data=json.dumps(data), headers=headers)
+                print("✅ Forwarded to GAS:", r.status_code, r.text)
+
+                return "OK", 200
+            except Exception as e:
+                print("❌ Error in webhook handler:", e)
+                return jsonify({"error": str(e)}), 500
+
+        # 原本 endpoints 設定
         endpoints = [Endpoint(route, settings, action_metrics)
                      for config in endpoint_configurations
                      for route, settings in config.items()]
